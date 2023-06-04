@@ -1,6 +1,12 @@
+use serde::{Deserialize, Serialize};
+use surrealdb::engine::remote::ws::Ws;
+use surrealdb::opt::auth::Root;
+use surrealdb::sql::Thing;
+use surrealdb::Surreal;
+
 #[cfg(feature = "ssr")]
 #[tokio::main]
-async fn main() {
+async fn main() -> surrealdb::Result<()> {
     use axum::{extract::Extension, routing::post, Router};
     use leptos::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
@@ -9,6 +15,14 @@ async fn main() {
     use std::sync::Arc;
 
     simple_logger::init_with_level(log::Level::Debug).expect("couldn't initialize logging");
+
+    // connect to surrealdb
+    let db = Surreal::new::<Ws>("127.0.0.1:8000").await?;
+    db.signin(Root {
+        username: "root",
+        password: "root",
+    })
+    .await?;
 
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values
     // For deployment these variables are:
@@ -34,6 +48,8 @@ async fn main() {
         .serve(app.into_make_service())
         .await
         .unwrap();
+
+    Ok(())
 }
 
 #[cfg(not(feature = "ssr"))]
